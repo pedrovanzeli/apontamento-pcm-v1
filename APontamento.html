@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apontamento de OS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 10px;
+        }
+        .container {
+            max-width: 400px;
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        label, input, select, textarea, button {
+            width: 100%;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+    <script>
+        async function buscarOS() {
+            const numeroSolicitacao = document.getElementById("numeroSolicitacao").value;
+            const response = await fetch(`https://script.google.com/macros/s/AKfycbzJEvsUi_0moOeD_x5fFlcvOp4IHoJWhpf29MbF8B9PnR5k7_vwtqz1LTY8oenng3g1/exec?numero=${numeroSolicitacao}`);
+            const osData = await response.json();
+            
+            if (osData.sucesso) {
+                let locaisInstalacao = osData.locais ? osData.locais.map(local => `<p><strong>${local.nome}:</strong> ${local.valor}</p>`).join('') : '';
+                
+                document.getElementById("dadosOS").innerHTML = ` 
+                    <p><strong>Tipo de Manutenção:</strong> ${osData.tipoManutencao}</p>
+                    <p><strong>Prioridade:</strong> ${osData.prioridade}</p>
+                    <p><strong>Solicitante:</strong> ${osData.solicitante}</p>
+                    <p><strong>Setor:</strong> ${osData.setor}</p>
+                    <p><strong>Descrição do Serviço:</strong> ${osData.descricao}</p>
+                    ${locaisInstalacao}
+                    <p><strong>Informações Complementares:</strong> ${osData.informacoesComplementares}</p>
+                `;
+            } else {
+                document.getElementById("dadosOS").innerHTML = "OS não encontrada.";
+            }
+        }
+
+        async function salvarApontamento() {
+            const apontamento = {
+                numeroSolicitacao: document.getElementById("numeroSolicitacao").value,
+                dataHoraInicial: document.getElementById("dataHoraInicial").value,
+                dataHoraFinal: document.getElementById("dataHoraFinal").value,
+                manutentor: document.getElementById("manutentor").value,
+                centroTrabalho: document.getElementById("centroTrabalho").value,
+                ordemConcluida: document.getElementById("ordemConcluida").value,
+                observacao: document.getElementById("observacao").value
+            };
+
+            const response = await fetch("https://script.google.com/macros/s/AKfycbzJEvsUi_0moOeD_x5fFlcvOp4IHoJWhpf29MbF8B9PnR5k7_vwtqz1LTY8oenng3g1/exec", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(apontamento)
+            });
+            
+            const result = await response.json();
+            alert(result.mensagem);
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h2>Apontamento de OS de Manutenção</h2>
+        <label for="numeroSolicitacao">Número da Solicitação:</label>
+        <input type="text" id="numeroSolicitacao">
+        <button onclick="buscarOS()">Buscar</button>
+        <div id="dadosOS"></div>
+
+        <h3>Apontamento de Serviço</h3>
+        <label>Data e Hora Inicial:</label>
+        <input type="datetime-local" id="dataHoraInicial">
+        <label>Data e Hora Final:</label>
+        <input type="datetime-local" id="dataHoraFinal">
+        <label>Identificação do Manutentor:</label>
+        <input type="text" id="manutentor">
+        <label>Centro de Trabalho:</label>
+        <select id="centroTrabalho">
+            <option value="Eletrica">Elétrica</option>
+            <option value="Mecanica">Mecânica</option>
+        </select>
+        <label>Ordem Concluída:</label>
+        <select id="ordemConcluida">
+            <option value="Sim">Sim</option>
+            <option value="Não">Não</option>
+        </select>
+        <label>Observação:</label>
+        <textarea id="observacao"></textarea>
+        <button onclick="salvarApontamento()">Salvar Apontamento</button>
+    </div>
+</body>
+</html>
