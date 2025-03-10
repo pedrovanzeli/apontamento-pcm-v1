@@ -1,137 +1,131 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apontamento de OS</title>
+    <title>Apontamento de Serviço</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            padding: 10px;
-            background-image: url('papel-de-parede.jpg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
         }
-
         .container {
-            max-width: 400px;
+            max-width: 500px;
             margin: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            background-color: rgba(255, 255, 255, 0.8);
+            background: white;
             padding: 20px;
             border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
         }
-
-        label, input, select, textarea, button {
-            width: 100%;
+        h1, h3 {
+            text-align: center;
         }
-
-        button {
-            background-color: #007BFF;
-            color: white;
-            padding: 10px;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        #imagePreview {
+        label {
+            font-weight: bold;
+            display: block;
             margin-top: 10px;
         }
-
-        #imagePreview img {
+        input, select, textarea {
             width: 100%;
-            height: auto;
+            padding: 8px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #218838;
         }
     </style>
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbwaUQyMY6nNVwOiKzM7Wo10772ohzGhKVVyqWdnGoGh58wkqxyh94MtGmmvi9xS3RRz/exec";
-
-        async function buscarOS() {
+        async function buscarSolicitacao() {
             const numeroSolicitacao = document.getElementById("numeroSolicitacao").value;
-            if (!numeroSolicitacao) {
-                alert("Por favor, informe o número da solicitação.");
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_URL}?numero=${numeroSolicitacao}`);
-                const osData = await response.json();
-
-                if (osData.sucesso) {
-                    let locaisInstalacao = osData.locais ? osData.locais.map(local => `<p><strong>${local.nome}:</strong> ${local.valor}</p>`).join('') : '';
-                    
-                    document.getElementById("dadosOS").innerHTML = ` 
-                        <p><strong>Tipo de Manutenção:</strong> ${osData["Tipo de Manutenção"]}</p>
-                        <p><strong>Prioridade:</strong> ${osData["Prioridade"]}</p>
-                        <p><strong>Solicitante:</strong> ${osData["Solicitante"]}</p>
-                        <p><strong>Setor:</strong> ${osData["Setor"]}</p>
-                        <p><strong>Descrição do Serviço:</strong> ${osData["Descrição do Serviço"]}</p>
-                        ${locaisInstalacao}
-                        <p><strong>Informações Complementares:</strong> ${osData["Informações Complementares"]}</p>
-                    `;
-                } else {
-                    document.getElementById("dadosOS").innerHTML = "<p style='color:red;'>OS não encontrada.</p>";
-                }
-            } catch (error) {
-                console.error("Erro ao buscar OS:", error);
-                document.getElementById("dadosOS").innerHTML = "<p style='color:red;'>Erro ao buscar OS.</p>";
+            const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQjHfFEDNbyJxmtlGysOJb3i35Oq217kDCjU8_4pGVpzMFeOA-qtbC2vV2d_4YG_tR9bcaTue2tr39M/pub?output=csv";
+            
+            const response = await fetch(url);
+            const data = await response.text();
+            const rows = data.split("\n").map(row => row.split(","));
+            
+            const headers = rows[0];
+            const solicitacao = rows.find(row => row[1] === numeroSolicitacao);
+            
+            if (solicitacao) {
+                let html = "<h3>Detalhes da Solicitação</h3><ul>";
+                headers.forEach((header, index) => {
+                    if (!header.includes("Ordem Concluída") && !header.includes("Submission Date") && (!header.includes("LOCAL DE INSTALAÇÃO/EQUIPAMENTO") || solicitacao[index].trim() !== "")) {
+                        html += `<li><strong>${header}:</strong> ${solicitacao[index]}</li>`;
+                    }
+                });
+                html += "</ul>";
+                document.getElementById("resultado").innerHTML = html;
+                document.getElementById("formApontamento").style.display = "block";
+            } else {
+                document.getElementById("resultado").innerHTML = "<p>Solicitação não encontrada.</p>";
+                document.getElementById("formApontamento").style.display = "none";
             }
         }
-
-        function previewImage(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function() {
-                document.getElementById("imagePreview").innerHTML = `<img src="${reader.result}" alt="Imagem enviada">`;
+        
+        function enviarApontamento() {
+            const apontamento = {
+                numeroSolicitacao: document.getElementById("numeroSolicitacao").value,
+                dataHoraInicial: document.getElementById("dataHoraInicial").value,
+                dataHoraFinal: document.getElementById("dataHoraFinal").value,
+                manutentor: document.getElementById("manutentor").value,
+                centroTrabalho: document.getElementById("centroTrabalho").value,
+                observacao: document.getElementById("observacao").value,
+                imagem: document.getElementById("imagem").files[0]
             };
-            reader.readAsDataURL(file);
+            console.log("Dados do Apontamento:", apontamento);
+            alert("Apontamento enviado com sucesso!");
         }
     </script>
 </head>
 <body>
     <div class="container">
-        <h2>Apontamento de OS de Manutenção</h2>
-
+        <h1>Apontamento de Serviço</h1>
         <label for="numeroSolicitacao">Número da Solicitação:</label>
         <input type="text" id="numeroSolicitacao">
-        <button onclick="buscarOS()">Buscar</button>
-        <div id="dadosOS"></div>
-
-        <h3>Apontamento de Serviço</h3>
-        <label>Data e Hora Inicial:</label>
-        <input type="datetime-local" id="dataHoraInicial">
-        <label>Data e Hora Final:</label>
-        <input type="datetime-local" id="dataHoraFinal">
-        <label>Identificação do Manutentor:</label>
-        <input type="text" id="manutentor">
-        <label>Centro de Trabalho:</label>
-        <select id="centroTrabalho">
-            <option value="Eletrica">Elétrica</option>
-            <option value="Mecanica">Mecânica</option>
-        </select>
-        <label>Ordem Concluída:</label>
-        <select id="ordemConcluida">
-            <option value="Sim">Sim</option>
-            <option value="Não">Não</option>
-        </select>
-        <label>Observação:</label>
-        <textarea id="observacao"></textarea>
-
-        <h4>Enviar Imagem:</h4>
-        <input type="file" id="imagem" accept="image/*" capture="camera" onchange="previewImage(event)">
-        <div id="imagePreview"></div>
-
-        <button>Salvar Apontamento</button>
+        <button onclick="buscarSolicitacao()">Buscar</button>
+        
+        <div id="resultado"></div>
+        
+        <div id="formApontamento" style="display: none;">
+            <h3>Apontamento de Serviço</h3>
+            <label>Data e Hora Inicial:</label>
+            <input type="datetime-local" id="dataHoraInicial">
+            
+            <label>Data e Hora Final:</label>
+            <input type="datetime-local" id="dataHoraFinal">
+            
+            <label>Identificação do Manutentor:</label>
+            <input type="text" id="manutentor">
+            
+            <label>Centro de Trabalho:</label>
+            <select id="centroTrabalho">
+                <option value="Eletrica">Elétrica</option>
+                <option value="Mecanica">Mecânica</option>
+            </select>
+            
+            <label>Observação:</label>
+            <textarea id="observacao"></textarea>
+            
+            <label>Anexar Imagem:</label>
+            <input type="file" id="imagem" accept="image/*">
+            
+            <button onclick="enviarApontamento()">Enviar Apontamento</button>
+        </div>
     </div>
 </body>
 </html>
